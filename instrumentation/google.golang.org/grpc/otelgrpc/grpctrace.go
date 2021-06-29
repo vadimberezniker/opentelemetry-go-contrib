@@ -33,10 +33,13 @@ const (
 	GRPCStatusCodeKey = attribute.Key("rpc.grpc.status_code")
 )
 
+type ContextAttrExtractor func(ctx context.Context) []attribute.KeyValue
+
 // config is a group of options for this instrumentation.
 type config struct {
 	Propagators    propagation.TextMapPropagator
 	TracerProvider trace.TracerProvider
+	contextAttrExtractor ContextAttrExtractor
 }
 
 // Option applies an option value for a config.
@@ -78,6 +81,16 @@ func (o tracerProviderOption) Apply(c *config) {
 // creating a Tracer.
 func WithTracerProvider(tp trace.TracerProvider) Option {
 	return tracerProviderOption{tp: tp}
+}
+
+type contextAttrExtractorOption struct{ e ContextAttrExtractor }
+
+func (o contextAttrExtractorOption) Apply(c *config) {
+	c.contextAttrExtractor = o.e
+}
+
+func WithContextAttrExtractor(e ContextAttrExtractor) Option {
+	return contextAttrExtractorOption{e: e}
 }
 
 type metadataSupplier struct {

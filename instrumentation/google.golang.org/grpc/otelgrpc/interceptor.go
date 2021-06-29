@@ -304,6 +304,16 @@ func StreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
 	}
 }
 
+func invokeContextAttributeExtractor(ctx context.Context, config *config, attr []attribute.KeyValue) []attribute.KeyValue {
+	if config.contextAttrExtractor == nil {
+		return attr
+	}
+	for _, a := range config.contextAttrExtractor(ctx) {
+		attr = append(attr, a)
+	}
+	return attr
+}
+
 // UnaryServerInterceptor returns a grpc.UnaryServerInterceptor suitable
 // for use in a grpc.NewServer call.
 func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
@@ -319,12 +329,14 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		bags, spanCtx := Extract(ctx, &metadataCopy, opts...)
 		ctx = baggage.ContextWithBaggage(ctx, bags)
 
-		tracer := newConfig(opts).TracerProvider.Tracer(
+		cnf := newConfig(opts)
+		tracer := cnf.TracerProvider.Tracer(
 			instrumentationName,
 			trace.WithInstrumentationVersion(otelcontrib.SemVersion()),
 		)
 
 		name, attr := spanInfo(info.FullMethod, peerFromCtx(ctx))
+		attr = invokeContextAttributeExtractor(ctx, cnf, attr)
 		ctx, span := tracer.Start(
 			trace.ContextWithRemoteSpanContext(ctx, spanCtx),
 			name,
@@ -408,12 +420,14 @@ func StreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 		bags, spanCtx := Extract(ctx, &metadataCopy, opts...)
 		ctx = baggage.ContextWithBaggage(ctx, bags)
 
-		tracer := newConfig(opts).TracerProvider.Tracer(
+		cnf := newConfig(opts)
+		tracer := cnf.TracerProvider.Tracer(
 			instrumentationName,
 			trace.WithInstrumentationVersion(otelcontrib.SemVersion()),
 		)
 
 		name, attr := spanInfo(info.FullMethod, peerFromCtx(ctx))
+		attr = invokeContextAttributeExtractor(ctx, cnf, attr)
 		ctx, span := tracer.Start(
 			trace.ContextWithRemoteSpanContext(ctx, spanCtx),
 			name,
