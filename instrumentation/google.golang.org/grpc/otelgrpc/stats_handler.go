@@ -5,6 +5,7 @@ package otelgrpc // import "go.opentelemetry.io/contrib/instrumentation/google.g
 
 import (
 	"context"
+	"log"
 	"sync/atomic"
 	"time"
 
@@ -159,6 +160,9 @@ func (c *config) handleRPC(ctx context.Context, rs stats.RPCStats, isServer bool
 	}
 
 	switch rs := rs.(type) {
+	case *stats.RawStreamEvent:
+		log.Printf("RAW STREAM EVENT %q is recording %t span %T %+v\n", rs.Message, span.IsRecording(), span, span)
+		span.AddEvent(rs.Message)
 	case *stats.Begin:
 	case *stats.InPayload:
 		if gctx != nil {
@@ -167,6 +171,7 @@ func (c *config) handleRPC(ctx context.Context, rs stats.RPCStats, isServer bool
 		}
 
 		if c.ReceivedEvent {
+			log.Printf("RECEIVED EVENT is recording %t span %T %+v\n", span.IsRecording(), span, span)
 			span.AddEvent("message",
 				trace.WithAttributes(
 					semconv.MessageTypeReceived,
@@ -183,6 +188,7 @@ func (c *config) handleRPC(ctx context.Context, rs stats.RPCStats, isServer bool
 		}
 
 		if c.SentEvent {
+			log.Printf("SENT EVENT: %t\n", span.IsRecording())
 			span.AddEvent("message",
 				trace.WithAttributes(
 					semconv.MessageTypeSent,
