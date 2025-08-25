@@ -161,7 +161,7 @@ func (c *config) handleRPC(ctx context.Context, rs stats.RPCStats, isServer bool
 
 	switch rs := rs.(type) {
 	case *stats.RawStreamEvent:
-		log.Printf("RAW STREAM EVENT %q is recording %t span %T %+v\n", rs.Message, span.IsRecording(), span, span)
+		log.Printf("RAW STREAM EVENT %q is recording %t span %T\n", rs.Message, span.IsRecording(), span)
 		span.AddEvent(rs.Message)
 	case *stats.Begin:
 	case *stats.InPayload:
@@ -171,7 +171,7 @@ func (c *config) handleRPC(ctx context.Context, rs stats.RPCStats, isServer bool
 		}
 
 		if c.ReceivedEvent {
-			log.Printf("RECEIVED EVENT is recording %t span %T %+v\n", span.IsRecording(), span, span)
+			log.Printf("RECEIVED EVENT is recording %t span %T\n", span.IsRecording(), span)
 			span.AddEvent("message",
 				trace.WithAttributes(
 					semconv.MessageTypeReceived,
